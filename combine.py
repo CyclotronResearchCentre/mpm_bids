@@ -93,6 +93,10 @@ def combine_acquisitions(f, in_folder, out_folder):
 
     ## todo for Monica: create proper json for this nifti and save it in out_folder
 
+def create_folder(path):
+    if not os.path.isdir(path):
+        os.mkdir(path)
+
 def combine(path):
     sites    = ["DZNE"]
     subjects = ["subj-01", "subj-02", "subj-03"]
@@ -101,7 +105,11 @@ def combine(path):
     for site in sites:
         for subject in subjects:
             for session in sessions:
-                combine_mpm(os.path.join(path,site,subject,session,"mpm"),os.path.join(path,"derivatives",site,subject,session,"mpm"))
-                combine_qsm(os.path.join(path,"derivatives",site,subject,session,"mpm"),os.path.join(path,"derivatives",site,subject,session,"qsm"))
+                mpm_out = os.path.join(path,"derivatives",site,subject,session,"mpm","ROCombine")
+                qsm_out = os.path.join(path,"derivatives",site,subject,session,"qsm","ROCombine")
+                create_folder(mpm_out)
+                create_folder(qsm_out)
+                combine_mpm(os.path.join(path,site,subject,session,"mpm"),mpm_out)
+                combine_qsm(mpm_out,qsm_out)
 
 combine("/Users/voelzkey/Desktop/Data/QSMData/2209_talk")
