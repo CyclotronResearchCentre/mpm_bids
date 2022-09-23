@@ -7,7 +7,7 @@ This script add one subject (ptx and cp) to the BIDS structure and creates a thi
 Note that it is based on the names from Bonn XNAT and it might need changes for other sites / data storage methods 
 """
 path_bids  = "/Users/voelzkey/Desktop/Data/QSMData/2209_talk"  # folder where you want to build your BIDS structure
-path_dcm   = "scans3"                                          # folder with the dicom scans (download from xnat and extract)
+path_dcm   = "/Users/voelzkey/Desktop/Data/QSMData/scans3"      # folder with the dicom scans (download from xnat and extract)
 
 site = "DZNE"    # site in BIDS (keep DZNE)
 subj = "subj-03" # name of the subject... there is a check if subject already exists
@@ -136,6 +136,9 @@ def parse_raw_data():
         elif "B1Com" in f:
             name = "%sfmap_B1" %(prefix_cp)
             folder = path_fmap_cp
+        elif "3dream" in f:
+            name = "%sfmap_B1_con" %(prefix_cp)
+            folder = path_fmap_cp
         else:
             continue
         os.system("dcm2niix -f %s -o %s %s" %(name, folder, os.path.join(path_dcm,f)))
@@ -147,6 +150,6 @@ def ROcombine_MPM():
 def ROcombine_QSM():
     pass
 
-mkdir()
+#mkdir()
 parse_raw_data()
 
