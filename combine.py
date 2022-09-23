@@ -1,6 +1,7 @@
 import os
 import numpy as np
 import nibabel as nib
+import json
 
 from scipy.ndimage import gaussian_filter
 
@@ -36,9 +37,10 @@ def combine_qsm(in_folder, out_folder):
         print("acq combined %s" %os.path.join(in_folder,f))
 
 def combine_complex(f, in_folder, out_folder):
+    
     # strip ".nii"  from filename
     filename = f[:-4]
-
+    
     # load data
     mag = nib.load(os.path.join(in_folder,f))
     mag_data = mag.get_fdata().astype(np.float32)
@@ -68,8 +70,14 @@ def combine_complex(f, in_folder, out_folder):
     pha_im = nib.Nifti1Image(np.angle(comp), mag.affine,mag.header)
     nib.save(pha_im, os.path.join(out_folder, filename+"_ph.nii"))
 
-    # copy json files
-    os.system("cp %s %s" % (os.path.join(in_folder,filename+".json"), os.path.join(out_folder,filename+".json")))
+    # correct timings (ms/s conversion) in json files and save in mpm-output folder
+    with open(os.path.join(in_folder,filename+".json"),"r+") as f:
+        param = json.load(f)
+        param["EchoTime"] = 1000*param["EchoTime"] 
+        param["RepetitionTime"] = 1000*param["RepetitionTime"] 
+
+    with open(os.path.join(out_folder,filename+".json"),"w") as f:
+        json.dump(param,f,indent=4)
 
 def combine_acquisitions(f, in_folder, out_folder):
     # create empty lists for magnitude and phase data
