@@ -150,6 +150,6 @@ def ROcombine_MPM():
 def ROcombine_QSM():
     pass
 
-#mkdir()
+mkdir()
 parse_raw_data()
 

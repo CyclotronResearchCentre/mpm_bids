@@ -1,4 +1,7 @@
 import os
+import sys
+import argparse
+
 
 def mpm_ptx(path,site,subject):
     filename_batch = os.path.join(path,"derivatives",site,subject,"ptx","mpm","spm_batch.m")
@@ -110,8 +113,36 @@ def call_batch(filename):
     eng.call_batch(filename,nargout=0)
     eng.quit()
 
-path = "/Users/voelzkey/Desktop/Data/QSMData/2209_talk"
-#for subject in ["subj-01", "subj-02", "subj-03"]:
-for subject in ["subj-03",]:
-    #mpm_ptx(path,"DZNE",subject)
-    mpm_cp(path,"DZNE",subject)
+def main():
+    parser = argparse.ArgumentParser(
+    description='Processing pipeline for MPM/QSM data in SCAIFIELD piloting.',
+    formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+
+    parser.add_argument('--path',   help='path to MPM/QSM data, folder, where the BIDS structure originates ', required=True)
+    parser.add_argument('--site',   help='sites that are supposed to be analysed, default: a for all', required=False, default = 'a', type=list)
+    parser.add_argument('--subj',   help='subjects that are supposed to be analysed, default: a for all', required=False, default = 'a', type=list)
+    
+    args = parser.parse_args()
+    path = args.path
+    sites = args.site
+    subjects = args.subj
+
+    print(sites)
+    if sites[0] == "a":
+        sites = [ f.name for f in os.scandir(os.path.join(path,"derivatives")) if f.is_dir() ]
+    
+    print(sites)
+    
+    for site in sites:
+        print(site)
+        if subjects[0] == 'a':
+            for s in [ f.name for f in os.scandir(os.path.join(path,"derivatives",site)) if f.is_dir() ]:
+                mpm_ptx(path,site,s)
+                mpm_cp(path,site,s)
+        else:
+            for s in subjects:
+                mpm_ptx(path,site,s)
+                mpm_cp(path,site,s)
+
+if __name__ == '__main__':
+    sys.exit(main())
