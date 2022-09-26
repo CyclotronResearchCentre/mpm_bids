@@ -2,6 +2,8 @@ import os
 import numpy as np
 import nibabel as nib
 import json
+import sys
+import argparse
 
 from scipy.ndimage import gaussian_filter
 
@@ -105,14 +107,24 @@ def create_folder(path):
     if not os.path.isdir(path):
         os.mkdir(path)
 
-def combine(path):
-    sites    = ["DZNE"]
-    subjects = ["subj-01", "subj-02", "subj-03"]
-    sessions = ["ptx", "cp"]
+def main():
+    parser = argparse.ArgumentParser(
+    description='Processing pipeline for MPM/QSM data in SCAIFIELD piloting.',
+    formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 
+    parser.add_argument('--path',   help='path to MPM/QSM data, folder, where the BIDS structure originates ', required=True)
+
+    args = parser.parse_args()
+    path = args.path
+
+    sites = [ f.name for f in os.scandir(os.path.join(path,"derivatives")) if f.is_dir() ]
+    
+    print(sites)
+    
     for site in sites:
-        for subject in subjects:
-            for session in sessions:
+        print(site)
+        for subject in [ f.name for f in os.scandir(os.path.join(path,"derivatives",site)) if f.is_dir() ]:
+            for session in [ f.name for f in os.scandir(os.path.join(path,"derivatives",site,subject)) if f.is_dir() ]:
                 mpm_out = os.path.join(path,"derivatives",site,subject,session,"mpm","ROCombine")
                 qsm_out = os.path.join(path,"derivatives",site,subject,session,"qsm","ROCombine")
                 create_folder(mpm_out)
@@ -120,4 +132,5 @@ def combine(path):
                 combine_mpm(os.path.join(path,site,subject,session,"mpm"),mpm_out)
                 combine_qsm(mpm_out,qsm_out)
 
-combine("/Users/voelzkey/Desktop/Data/QSMData/2209_talk")
+if __name__ == '__main__':
+    sys.exit(main())
