@@ -7,6 +7,7 @@ def mpm_ptx(path,site,subject):
     filename_batch = os.path.join(path,"derivatives",site,subject,"ptx","mpm","spm_batch.m")
     input_folder   = os.path.join(path,"derivatives",site,subject,"ptx","mpm","ROcombine")
     output_folder  = os.path.join(path,"derivatives",site,subject,"ptx","mpm","maps")
+    b1_folder      = os.path.join(path,"derivatives",site,subject,"ptx","fmap")
 
     f = open(filename_batch,"w")
 
@@ -18,7 +19,11 @@ def mpm_ptx(path,site,subject):
     f.write("%---------------------------------------\n\n")
 
     f.write("matlabbatch{1}.spm.tools.hmri.create_mpm.subj.output.outdir = {'%s'};\n" %output_folder)
-    f.write("matlabbatch{1}.spm.tools.hmri.create_mpm.subj.b1_type.no_B1_correction = 'noB1';\n")
+    f.write("matlabbatch{1}.spm.tools.hmri.create_mpm.subj.b1_type.pre_processed_B1.b1input = {\n")
+    f.write("                                                                                  '%s,1'\n"%os.path.join(b1_folder,"%s_%s_cp_fmap_b1_con.nii" %(site,subject)))
+    f.write("                                                                                  '%s,1'\n"%os.path.join(b1_folder,"fmap_B1sim.nii"))
+    f.write("                                                                                  };\n")
+    f.write("matlabbatch{1}.spm.tools.hmri.create_mpm.subj.b1_type.pre_processed_B1.scafac = 5;\n")
     f.write("matlabbatch{1}.spm.tools.hmri.create_mpm.subj.sensitivity.RF_us = '-';\n")
 
     # input data MT
@@ -119,8 +124,8 @@ def main():
     formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 
     parser.add_argument('--path',   help='path to MPM/QSM data, folder, where the BIDS structure originates ', required=True)
-    parser.add_argument('--site',   help='sites that are supposed to be analysed, default: a for all', required=False, default = 'a', type=list)
-    parser.add_argument('--subj',   help='subjects that are supposed to be analysed, default: a for all', required=False, default = 'a', type=list)
+    parser.add_argument('--site',   help='sites that are supposed to be analysed, default: a for all', required=False, default = 'a')
+    parser.add_argument('--subj',   help='subjects that are supposed to be analysed, default: a for all', required=False, default = 'a')
     
     args = parser.parse_args()
     path = args.path
@@ -138,11 +143,10 @@ def main():
         if subjects[0] == 'a':
             for s in [ f.name for f in os.scandir(os.path.join(path,"derivatives",site)) if f.is_dir() ]:
                 mpm_ptx(path,site,s)
-                mpm_cp(path,site,s)
+                #mpm_cp(path,site,s)
         else:
-            for s in subjects:
-                mpm_ptx(path,site,s)
-                mpm_cp(path,site,s)
+            mpm_ptx(path,site,subjects)
+            #mpm_cp(path,site,subjects)
 
 if __name__ == '__main__':
     sys.exit(main())
