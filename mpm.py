@@ -18,16 +18,18 @@ def mpm_ptx(path,site,subject):
     f.write("% date: xxx\n")
     f.write("%---------------------------------------\n\n")
 
-    f.write("matlabbatch{1}.spm.tools.hmri.create_mpm.subj.output.outdir = {'%s'};\n" %output_folder)
-    f.write("matlabbatch{1}.spm.tools.hmri.create_mpm.subj.b1_type.pre_processed_B1.b1input = {\n")
+    f.write("matlabbatch{1}.spm.tools.hmri.hmri_config.hmri_setdef.customised = {'%s'};\n" % os.path.join(os.path.dirname(os.path.abspath(__file__)),"hmri_defaults_SS_scaifield.m"))
+
+    f.write("matlabbatch{2}.spm.tools.hmri.create_mpm.subj.output.outdir = {'%s'};\n" %output_folder)
+    f.write("matlabbatch{2}.spm.tools.hmri.create_mpm.subj.b1_type.pre_processed_B1.b1input = {\n")
     f.write("                                                                                  '%s,1'\n"%os.path.join(b1_folder,"%s_%s_cp_fmap_b1_con.nii" %(site,subject)))
     f.write("                                                                                  '%s,1'\n"%os.path.join(b1_folder,"fmap_B1sim.nii"))
     f.write("                                                                                  };\n")
-    f.write("matlabbatch{1}.spm.tools.hmri.create_mpm.subj.b1_type.pre_processed_B1.scafac = 5;\n")
-    f.write("matlabbatch{1}.spm.tools.hmri.create_mpm.subj.sensitivity.RF_us = '-';\n")
+    f.write("matlabbatch{2}.spm.tools.hmri.create_mpm.subj.b1_type.pre_processed_B1.scafac = 5;\n")
+    f.write("matlabbatch{2}.spm.tools.hmri.create_mpm.subj.sensitivity.RF_us = '-';\n")
 
     # input data MT
-    f.write("matlabbatch{1}.spm.tools.hmri.create_mpm.subj.raw_mpm.MT = {\n")
+    f.write("matlabbatch{2}.spm.tools.hmri.create_mpm.subj.raw_mpm.MT = {\n")
     f.write("                                                            '%s'\n"%os.path.join(input_folder,"%s_%s_ptx_MTwUP_e1.nii" %(site,subject)))
     f.write("                                                            '%s'\n"%os.path.join(input_folder,"%s_%s_ptx_MTwUP_e2.nii" %(site,subject)))
     f.write("                                                            '%s'\n"%os.path.join(input_folder,"%s_%s_ptx_MTwUP_e3.nii" %(site,subject)))
@@ -35,7 +37,7 @@ def mpm_ptx(path,site,subject):
     f.write("                                                            };\n")
 
     # input data PD
-    f.write("matlabbatch{1}.spm.tools.hmri.create_mpm.subj.raw_mpm.PD = {\n")
+    f.write("matlabbatch{2}.spm.tools.hmri.create_mpm.subj.raw_mpm.PD = {\n")
     f.write("                                                            '%s'\n"%os.path.join(input_folder,"%s_%s_ptx_PD_e1.nii" %(site,subject)))
     f.write("                                                            '%s'\n"%os.path.join(input_folder,"%s_%s_ptx_PD_e2.nii" %(site,subject)))
     f.write("                                                            '%s'\n"%os.path.join(input_folder,"%s_%s_ptx_PD_e3.nii" %(site,subject)))
@@ -43,7 +45,7 @@ def mpm_ptx(path,site,subject):
     f.write("                                                            };\n")
 
     # input data T1
-    f.write("matlabbatch{1}.spm.tools.hmri.create_mpm.subj.raw_mpm.T1 = {\n")
+    f.write("matlabbatch{2}.spm.tools.hmri.create_mpm.subj.raw_mpm.T1 = {\n")
     f.write("                                                            '%s'\n"%os.path.join(input_folder,"%s_%s_ptx_T1_e1.nii" %(site,subject)))
     f.write("                                                            '%s'\n"%os.path.join(input_folder,"%s_%s_ptx_T1_e2.nii" %(site,subject)))
     f.write("                                                            '%s'\n"%os.path.join(input_folder,"%s_%s_ptx_T1_e3.nii" %(site,subject)))
@@ -51,7 +53,7 @@ def mpm_ptx(path,site,subject):
     f.write("                                                            };\n")
 
     # Disable popups and close file
-    f.write("matlabbatch{1}.spm.tools.hmri.create_mpm.subj.popup = false;\n")
+    f.write("matlabbatch{2}.spm.tools.hmri.create_mpm.subj.popup = false;\n")
     f.close()
 
     call_batch(filename_batch)
@@ -71,10 +73,12 @@ def mpm_cp(path,site,subject):
     f.write("% date: xxx\n")
     f.write("%---------------------------------------\n\n")
 
-    f.write("matlabbatch{1}.spm.tools.hmri.create_mpm.subj.output.outdir = {'%s'};\n" %output_folder)
-    f.write("matlabbatch{1}.spm.tools.hmri.create_mpm.subj.sensitivity.RF_us = '-';\n")
+    f.write("matlabbatch{1}.spm.tools.hmri.hmri_config.hmri_setdef.customised = {'%s'};\n" % os.path.join(os.path.dirname(os.path.abspath(__file__)),"hmri_defaults_SS_scaifield.m"))
 
-    f.write("matlabbatch{1}.spm.tools.hmri.create_mpm.subj.b1_type.pre_processed_B1.b1input = {\n")
+    f.write("matlabbatch{2}.spm.tools.hmri.create_mpm.subj.output.outdir = {'%s'};\n" %output_folder)
+    f.write("matlabbatch{2}.spm.tools.hmri.create_mpm.subj.sensitivity.RF_us = '-';\n")
+
+    f.write("matlabbatch{2}.spm.tools.hmri.create_mpm.subj.b1_type.pre_processed_B1.b1input = {\n")
     f.write("                                                                                  '%s,1'\n"%os.path.join(b1_folder,"%s_%s_cp_fmap_b1_con.nii" %(site,subject)))
     f.write("                                                                                  '%s,1'\n"%os.path.join(b1_folder,"%s_%s_cp_fmap_b1.nii" %(site,subject)))
     f.write("                                                                                  };\n")
@@ -82,7 +86,7 @@ def mpm_cp(path,site,subject):
 
 
     # input data MT
-    f.write("matlabbatch{1}.spm.tools.hmri.create_mpm.subj.raw_mpm.MT = {\n")
+    f.write("matlabbatch{2}.spm.tools.hmri.create_mpm.subj.raw_mpm.MT = {\n")
     f.write("                                                            '%s'\n"%os.path.join(input_folder,"%s_%s_cp_MTwCP_e1.nii" %(site,subject)))
     f.write("                                                            '%s'\n"%os.path.join(input_folder,"%s_%s_cp_MTwCP_e2.nii" %(site,subject)))
     f.write("                                                            '%s'\n"%os.path.join(input_folder,"%s_%s_cp_MTwCP_e3.nii" %(site,subject)))
@@ -90,7 +94,7 @@ def mpm_cp(path,site,subject):
     f.write("                                                            };\n")
 
     # input data PD
-    f.write("matlabbatch{1}.spm.tools.hmri.create_mpm.subj.raw_mpm.PD = {\n")
+    f.write("matlabbatch{2}.spm.tools.hmri.create_mpm.subj.raw_mpm.PD = {\n")
     f.write("                                                            '%s'\n"%os.path.join(input_folder,"%s_%s_cp_PD_e1.nii" %(site,subject)))
     f.write("                                                            '%s'\n"%os.path.join(input_folder,"%s_%s_cp_PD_e2.nii" %(site,subject)))
     f.write("                                                            '%s'\n"%os.path.join(input_folder,"%s_%s_cp_PD_e3.nii" %(site,subject)))
@@ -98,7 +102,7 @@ def mpm_cp(path,site,subject):
     f.write("                                                            };\n")
 
     # input data T1
-    f.write("matlabbatch{1}.spm.tools.hmri.create_mpm.subj.raw_mpm.T1 = {\n")
+    f.write("matlabbatch{2}.spm.tools.hmri.create_mpm.subj.raw_mpm.T1 = {\n")
     f.write("                                                            '%s'\n"%os.path.join(input_folder,"%s_%s_cp_T1_e1.nii" %(site,subject)))
     f.write("                                                            '%s'\n"%os.path.join(input_folder,"%s_%s_cp_T1_e2.nii" %(site,subject)))
     f.write("                                                            '%s'\n"%os.path.join(input_folder,"%s_%s_cp_T1_e3.nii" %(site,subject)))
@@ -106,7 +110,7 @@ def mpm_cp(path,site,subject):
     f.write("                                                            };\n")
 
     # Disable popups and close file
-    f.write("matlabbatch{1}.spm.tools.hmri.create_mpm.subj.popup = false;\n")
+    f.write("matlabbatch{2}.spm.tools.hmri.create_mpm.subj.popup = false;\n")
     f.close()
 
     call_batch(filename_batch)
@@ -143,10 +147,10 @@ def main():
         if subjects[0] == 'a':
             for s in [ f.name for f in os.scandir(os.path.join(path,"derivatives",site)) if f.is_dir() ]:
                 mpm_ptx(path,site,s)
-                #mpm_cp(path,site,s)
+                mpm_cp(path,site,s)
         else:
             mpm_ptx(path,site,subjects)
-            #mpm_cp(path,site,subjects)
+            mpm_cp(path,site,subjects)
 
 if __name__ == '__main__':
     sys.exit(main())

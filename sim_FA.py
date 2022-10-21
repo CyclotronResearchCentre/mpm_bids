@@ -55,6 +55,7 @@ class Pulse_from_ini:
 
         self.deltaT = int(re.findall(r'\b\d+\b', config["Gradient"]["GradRasterTime"])[0])
         self.points = int(re.findall(r'\b\d+\b', config["Gradient"]["GradientSamples"])[0])
+        self.nomFA  = int(re.findall(r'\b\d+\b', config["pTXPulse"]["NominalFlipAngle"])[0])
 
         print(self.deltaT)
 
@@ -72,9 +73,6 @@ class Pulse_from_ini:
 
     def calc_Pulse(self):
         self.Pulse = self.B1@(self.Volt_mag*np.exp(1j* self.Volt_pha)).transpose()
-        plt.figure()
-        plt.plot(self.Pulse[22,22,22])
-        plt.show()
 
         self.Pulse *= 4.5366E-5*267E-6
         print(abs(np.max(self.Pulse)))
@@ -86,28 +84,15 @@ class Pulse_from_ini:
         O = -np.squeeze(np.array(self.Grad@Pos*267.515)/1E6)
         return O
 
-    def calc_FA(self,x,y,z):
+    def calc_FA(self,x,y,z,offcenter):
         Mz = np.matrix([[0],[0],[1]])
 
         offset = self.calc_omega(x,y,z)
-
+        
         pulse_local = self.Pulse
         for i in range(self.points):
             j = self.points-i-1
-            Rstep = R(np.angle(pulse_local[x,y,z,j]),offset[j],abs(pulse_local[x,y,z,j]),self.deltaT)
+            Rstep = R(np.angle(pulse_local[x,y,z,j]),offset[j]+offcenter,abs(pulse_local[x,y,z,j]),self.deltaT)
             Mz = Rstep@Mz
-        return np.arccos(Mz[2])
+        return 180*np.arccos(Mz[2])/np.pi, 180*np.arctan2(Mz[0],Mz[1])/np.pi
 
-test = Pulse_from_ini("pTXNormal.ini","/Users/voelzkey/Desktop/Data/QSMData/2209_talk/DZNE/subj-03/ptx/fmap/DZNE_subj-03_ptx_fmap_B1SC.nii")
-
-X,Y,Z,I = test.B1.shape
-FA = np.zeros((X,Y,Z))
-
-for x in range(X):
-    for y in range(Y):
-        for z in range(Z):
-            print(x,y,z)
-            FA[x,y,z] = 180*test.calc_FA(x,y,z)/np.pi
-
-mag_im = nib.Nifti1Image(FA, test.affine,test.header)
-nib.save(mag_im, "test_FA-mBlib_3.nii")
