@@ -61,7 +61,7 @@ def combine_complex(f, in_folder, out_folder, raw_folder):
     if not "_den" in filename:
         pha_data *= np.pi/4096
     # create complex dataset
-    comp = mag_data * np.exp(2.0j*pha_data)
+    comp = mag_data * np.exp(1.0j*pha_data)
 
     # phase correction
     pha_diff = np.angle(comp[...,1:]*np.conj(comp[...,:-1]))
@@ -127,7 +127,7 @@ def denoise(in_folder, out_folder,prelim):
     create_folder(out_folder)
     create_folder(prelim)
 
-    """files = [f for f in os.listdir(in_folder) if ((".nii" in f) and not ("ph.nii" in f))]
+    files = [f for f in os.listdir(in_folder) if ((".nii" in f) and not ("ph.nii" in f))]
     is_ptx = "_ptx_" in files[0]
     if is_ptx:
         files = [f for f in files if "MTwCP" not in f]
@@ -155,8 +155,7 @@ def denoise(in_folder, out_folder,prelim):
         os.system("fslroi %s/out_magn.nii %s %i 2" %(prelim,os.path.join(out_folder,files[i][:-4]+"_den.nii"), 2*i))
         os.system("fslroi %s/out_phas.nii %s %i 2" %(prelim,os.path.join(out_folder,files[i][:-4]+"_den_ph.nii"), 2*i))
 
-    shutil.rmtree(prelim, ignore_errors=True)"""
-    #os.rmdir(prelim)
+    shutil.rmtree(prelim, ignore_errors=True)
 
 def calc_FAmap(ini_file, b1_in_file, b1_out_file):
 
@@ -185,18 +184,21 @@ def main():
 
     parser.add_argument('--path', help='path to MPM/QSM data, folder, where the BIDS structure originates ', required=True)
     parser.add_argument('--den',  help='boolean, shall the raw data be denoised? default = true ', required=False, default=True)
+    parser.add_argument('--sub',  help='string, subject that is to be processed, default = all ', required=False, default=-1)
 
     args = parser.parse_args()
     path = args.path
-    den  = args.den
+    den  = args.den 
+    sub  = args.sub
 
     sites = [ f.name for f in os.scandir(os.path.join(path,"derivatives")) if f.is_dir() ]
     
-    print(sites)
-    
     for site in sites:
-        print(site)
-        for subject in sorted([ f.name for f in os.scandir(os.path.join(path,"derivatives",site)) if f.is_dir()]):
+        if sub == -1:
+            subjects = sorted([ f.name for f in os.scandir(os.path.join(path,"derivatives",site)) if f.is_dir()])
+        else:
+            subjects = [sub,]
+        for subject in subjects:
             for session in [f.name for f in os.scandir(os.path.join(path,"derivatives",site,subject)) if f.is_dir()]:
                 if "ptx" in session:
                     b1_in    = os.path.join(path,site,subject,session,"fmap","%s_%s_ptx_fmap_B1SC.nii" %(site,subject))
@@ -209,7 +211,7 @@ def main():
                 if den:
                     mpm_in  = os.path.join(path,"derivatives",site,subject,session,"mpm","denoised")
                     prelim  = os.path.join(path,"derivatives",site,subject,session,"mpm","prelim")
-                    denoise(raw_folder,mpm_in,prelim)
+                    #denoise(raw_folder,mpm_in,prelim)
                 else:
 
                     mpm_in = raw_folder                

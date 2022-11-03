@@ -8,6 +8,7 @@ def mpm_ptx(path,site,subject):
     input_folder   = os.path.join(path,"derivatives",site,subject,"ptx","mpm","ROcombine")
     output_folder  = os.path.join(path,"derivatives",site,subject,"ptx","mpm","maps")
     b1_folder      = os.path.join(path,"derivatives",site,subject,"ptx","fmap")
+    b1_raw         = os.path.join(path,site,subject,"ptx","fmap")
 
     f = open(filename_batch,"w")
 
@@ -21,11 +22,18 @@ def mpm_ptx(path,site,subject):
     f.write("matlabbatch{1}.spm.tools.hmri.hmri_config.hmri_setdef.customised = {'%s'};\n" % os.path.join(os.path.dirname(os.path.abspath(__file__)),"hmri_defaults_SS_scaifield.m"))
 
     f.write("matlabbatch{2}.spm.tools.hmri.create_mpm.subj.output.outdir = {'%s'};\n" %output_folder)
-    f.write("matlabbatch{2}.spm.tools.hmri.create_mpm.subj.b1_type.pre_processed_B1.b1input = {\n")
-    f.write("                                                                                  '%s,1'\n"%os.path.join(b1_folder,"%s_%s_cp_fmap_b1_con.nii" %(site,subject)))
-    f.write("                                                                                  '%s,1'\n"%os.path.join(b1_folder,"fmap_B1sim.nii"))
-    f.write("                                                                                  };\n")
-    f.write("matlabbatch{2}.spm.tools.hmri.create_mpm.subj.b1_type.pre_processed_B1.scafac = 5;\n")
+    if os.path.isfile(os.path.join(b1_raw,"%s_%s_ptx_afi.nii" %(site,subject))):
+        f.write("matlabbatch{2}.spm.tools.hmri.create_mpm.subj.b1_type.pre_processed_B1.b1input = {\n")
+        f.write("                                                                                  '%s,1'\n"%os.path.join(b1_raw,"%s_%s_ptx_afi.nii" %(site,subject)))
+        f.write("                                                                                  '%s,1'\n"%os.path.join(b1_raw,"%s_%s_ptx_fmap_afi.nii" %(site,subject)))
+        f.write("                                                                                  };\n")
+        f.write("matlabbatch{2}.spm.tools.hmri.create_mpm.subj.b1_type.pre_processed_B1.scafac = .1;\n")
+    else:
+        f.write("matlabbatch{2}.spm.tools.hmri.create_mpm.subj.b1_type.pre_processed_B1.b1input = {\n")
+        f.write("                                                                                  '%s,1'\n"%os.path.join(b1_folder,"%s_%s_cp_fmap_b1_con.nii" %(site,subject)))
+        f.write("                                                                                  '%s,1'\n"%os.path.join(b1_folder,"fmap_B1sim.nii"))
+        f.write("                                                                                  };\n")
+        f.write("matlabbatch{2}.spm.tools.hmri.create_mpm.subj.b1_type.pre_processed_B1.scafac = 1;\n")
     f.write("matlabbatch{2}.spm.tools.hmri.create_mpm.subj.sensitivity.RF_us = '-';\n")
 
     # input data MT
