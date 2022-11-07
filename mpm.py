@@ -90,7 +90,7 @@ def mpm_cp(path,site,subject):
     f.write("                                                                                  '%s,1'\n"%os.path.join(b1_folder,"%s_%s_cp_fmap_b1_con.nii" %(site,subject)))
     f.write("                                                                                  '%s,1'\n"%os.path.join(b1_folder,"%s_%s_cp_fmap_b1.nii" %(site,subject)))
     f.write("                                                                                  };\n")
-    f.write("matlabbatch{1}.spm.tools.hmri.create_mpm.subj.b1_type.pre_processed_B1.scafac = 0.1;\n")
+    f.write("matlabbatch{2}.spm.tools.hmri.create_mpm.subj.b1_type.pre_processed_B1.scafac = 0.1;\n")
 
 
     # input data MT
@@ -157,7 +157,7 @@ def main():
                 mpm_ptx(path,site,s)
                 mpm_cp(path,site,s)
         else:
-            mpm_ptx(path,site,subjects)
+            #mpm_ptx(path,site,subjects)
             mpm_cp(path,site,subjects)
 
 if __name__ == '__main__':

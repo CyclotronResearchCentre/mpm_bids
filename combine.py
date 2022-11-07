@@ -23,7 +23,7 @@ def combine_mpm(in_folder, out_folder, raw_folder):
         a. combine readout directions
         b. save readout combined images to output folder
     """
-    files = [f for f in os.listdir(in_folder) if ((".nii" in f) and not ("ph.nii" in f))]
+    files = [f for f in os.listdir(in_folder) if ((".nii" in f) and not ("ph.nii" in f) and not ("._" in f))]
     for f in files:
         combine_complex(f, in_folder, out_folder, raw_folder)
         print("RO combined %s" %os.path.join(in_folder,f))
@@ -36,6 +36,7 @@ def combine_qsm(in_folder, out_folder):
         b. save multi-TE data in output folder
     """
     files = [f for f in os.listdir(in_folder) if ("e1.nii" in f)]
+    files = [f for f in files if ("._" not in f)]
     for f in files:
         combine_acquisitions(f, in_folder, out_folder)
         print("acq combined %s" %os.path.join(in_folder,f))
@@ -205,13 +206,13 @@ def main():
                     b1_out   = os.path.join(path,"derivatives",site,subject,session,"fmap","%s_%s_ptx_fmap_B1_sim.nii" %(site,subject))
                     ini_file = "pTXNormal.ini"
 
-                    #calc_FAmap(ini_file, b1_in, b1_out)
+                    calc_FAmap(ini_file, b1_in, b1_out)
 
                 raw_folder = os.path.join(path,site,subject,session,"mpm")
                 if den:
                     mpm_in  = os.path.join(path,"derivatives",site,subject,session,"mpm","denoised")
                     prelim  = os.path.join(path,"derivatives",site,subject,session,"mpm","prelim")
-                    #denoise(raw_folder,mpm_in,prelim)
+                    denoise(raw_folder,mpm_in,prelim)
                 else:
 
                     mpm_in = raw_folder                
