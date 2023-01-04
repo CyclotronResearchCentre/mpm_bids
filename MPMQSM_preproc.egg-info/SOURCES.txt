@@ -1,0 +1,8 @@
+setup.py
+MPMQSM_preproc/__init__.py
+MPMQSM_preproc/preproc.py
+MPMQSM_preproc.egg-info/PKG-INFO
+MPMQSM_preproc.egg-info/SOURCES.txt
+MPMQSM_preproc.egg-info/dependency_links.txt
+MPMQSM_preproc.egg-info/entry_points.txt
+MPMQSM_preproc.egg-info/top_level.txt

@@ -1,0 +1,3 @@
+[console_scripts]
+mpmqsm_preproc = MPMQSM_preproc.preproc:main
+
