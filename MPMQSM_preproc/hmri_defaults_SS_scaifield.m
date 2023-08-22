@@ -64,8 +64,12 @@ hmri_def.json = struct('extended',false,'separate',true,'anonym','none',...
 % provides a series of tissue probability maps. These TPMs could be
 % replaced by other TPMs, to better match the population studied. 
 % ADVANCED USER ONLY.
+%   CRC (Siya)
 %hmri_def.TPM = fullfile('/home/siya/Downloads/software/SPM_v2/toolbox_download/hMRI-toolbox','etpm','eTPM.nii');
-hmri_def.TPM = fullfile('/Users/voelzkey/Desktop/CodeMatlab/hMRI-toolbox-0.2.4/etpm','eTPM.nii');
+%   DZNE (Yannik)
+%hmri_def.TPM = fullfile('/Users/voelzkey/Desktop/CodeMatlab/hMRI-toolbox-0.2.4/etpm','eTPM.nii');
+%   NTNU (Marc)
+hmri_def.TPM = fullfile('/home/marcantf/software/hMRI-toolbox-0.3.0/etpm','eTPM.nii');
 % default template for auto-reorientation. The template can be selected
 % within the Auto-reorient module. The following is the default suggested
 % for T1w images. Please refer to the Auto-reorient documentation for an
@@ -343,12 +347,16 @@ hmri_def.MPMacq_set.vals{6}  = [24.5 24.5 6 21];
 hmri_def.MPMacq_set.names{7} = 'v3star protocol';
 hmri_def.MPMacq_set.tags{7}  = 'v3star';
 hmri_def.MPMacq_set.vals{7}  = [25 25 6 21];
-% Travel head Protocol UCL ULG CAM CBS BAL
+% 8) Travel head Protocol UCL ULG CAM CBS BAL
 % Siya et al ISMRM 2022 600 um 7T
 hmri_def.MPMacq_set.names{8} = 'travelhead protocol';
 hmri_def.MPMacq_set.tags{8}  = 'travelhead';
 hmri_def.MPMacq_set.vals{8}  = [19.5    19.5    5   20];
-
+% 9) SCAIFIELD v0.3 pTX pilot
+% PD-weighted: TR=33.5ms; a=4deg; T1-weighted: TR=33.5ms; a=25deg
+hmri_def.MPMacq_set.names{8} = 'SCAIFIELD protocol';
+hmri_def.MPMacq_set.tags{8}  = 'scaifield';
+hmri_def.MPMacq_set.vals{8}  = [33.5 33.5 4 25];
 
 % B) Defining the imperfect spoiling correction parameters for the
 % different protocols 

@@ -17,7 +17,7 @@ change path to BIDS in the very last line of this file
 
 def combine_mpm(in_folder, out_folder, raw_folder):
     """
-    1. find all pairs of magnitide/phase images in input folder
+    1. find all pairs of magnitude/phase images in input folder
     2. call combine_complex for all pairs
         a. combine readout directions
         b. save readout combined images to output folder
@@ -144,6 +144,7 @@ def denoise(in_folder, out_folder,prelim):
     command_pha = "fslmerge -t %s/pha.nii" %prelim
     for f in files:
         command_pha += " %s" % os.path.join(in_folder,f[:-4]+"_ph.nii")
+    print(command_pha) # Added by MAF 22/08/23
     os.system(command_pha)
 
     os.system("mrcalc %s/pha.nii.gz 0.000766990393943 -mult %s/tmp_pha.nii.gz" %(prelim,prelim))
@@ -156,8 +157,10 @@ def denoise(in_folder, out_folder,prelim):
     os.system("mrcalc %s/out.mif -phase %s/out_phas.nii --force" %(prelim,prelim))
     
     for i in range(len(files)):
-        os.system("fslroi %s/out_magn.nii %s %i 2" %(prelim,os.path.join(out_folder,files[i][:-4]+"_den.nii"), 2*i))
-        os.system("fslroi %s/out_phas.nii %s %i 2" %(prelim,os.path.join(out_folder,files[i][:-4]+"_den_ph.nii"), 2*i))
+        cmd_magn = "fslroi %s/out_magn.nii %s %i 1" % (prelim, os.path.join(out_folder, files[i][:-4] + "_den.nii"), i)
+        cmd_ph = "fslroi %s/out_phas.nii %s %i 1" %(prelim,os.path.join(out_folder,files[i][:-4]+"_den_ph.nii"), i)
+        os.system(cmd_magn)
+        os.system(cmd_ph)
 
     shutil.rmtree(prelim, ignore_errors=True)
 
@@ -294,29 +297,38 @@ def main():
     ses  = args.ses
     ptx  = args.ptx
     
-    """
+
+    # Prepare input directory
     raw_folder = os.path.join(path,site,sub,ses,"mpm")
     create_folder(os.path.join(path,"derivatives",site,sub,ses,"mpm"))
     create_folder(os.path.join(path,"derivatives",site,sub,ses,"qsm"))
+
+    # Denoise MPM data
     if den:
         mpm_in  = os.path.join(path,"derivatives",site,sub,ses,"mpm","denoised")
         prelim  = os.path.join(path,"derivatives",site,sub,ses,"mpm","prelim")
         denoise(raw_folder,mpm_in,prelim)
     else:
-        mpm_in = raw_folder                
+        mpm_in = raw_folder
+
+    # Prepare output directory
     mpm_out = os.path.join(path,"derivatives",site,sub,ses,"mpm","ROCombine")
     qsm_out = os.path.join(path,"derivatives",site,sub,ses,"qsm","ROCombine")
     create_folder(mpm_out)
     create_folder(qsm_out)
+
+    # Combine the two MPM acquisitions
     combine_mpm(mpm_in,mpm_out,raw_folder)
     combine_qsm(mpm_out,qsm_out)
 
+    # Motion correction of MPM data
     path_moco = os.path.join(path,"derivatives",site,sub,ses,"qsm","moco")
     moco(mpm_out,path_moco,qsm_out)
-    """
+
     mpm(path, site, sub, ses, ptx)
 
 def call_batch(filename):
+
     import matlab.engine as mat # move matlab import to here if matlab is not installed only this function fails
 
     eng=mat.start_matlab()
@@ -361,20 +373,31 @@ def mpm_ptx(path,site,subject,session):
     f.write("                                                            '%s'\n"%os.path.join(input_folder,"%s_%s_%s_MTw_e4.nii" %(site,subject,session)))
     f.write("                                                            };\n")
 
+    """
+    MAF: Manually added the 'w' after PD and T1 since Yannik forgot it originally (August 18th 2023)
+    """
     # input data PD
     f.write("matlabbatch{2}.spm.tools.hmri.create_mpm.subj.raw_mpm.PD = {\n")
-    f.write("                                                            '%s'\n"%os.path.join(input_folder,"%s_%s_%s_PD_e1.nii" %(site,subject,session)))
-    f.write("                                                            '%s'\n"%os.path.join(input_folder,"%s_%s_%s_PD_e2.nii" %(site,subject,session)))
-    f.write("                                                            '%s'\n"%os.path.join(input_folder,"%s_%s_%s_PD_e3.nii" %(site,subject,session)))
-    f.write("                                                            '%s'\n"%os.path.join(input_folder,"%s_%s_%s_PD_e4.nii" %(site,subject,session)))
+    f.write("                                                            '%s'\n"%os.path.join(input_folder,"%s_%s_%s_PDw_e1.nii" %(site,subject,
+                                                                                                                                   session)))
+    f.write("                                                            '%s'\n"%os.path.join(input_folder,"%s_%s_%s_PDw_e2.nii" %(site,subject,
+                                                                                                                                   session)))
+    f.write("                                                            '%s'\n"%os.path.join(input_folder,"%s_%s_%s_PDw_e3.nii" %(site,subject,
+                                                                                                                                   session)))
+    f.write("                                                            '%s'\n"%os.path.join(input_folder,"%s_%s_%s_PDw_e4.nii" %(site,subject,
+                                                                                                                                   session)))
     f.write("                                                            };\n")
 
     # input data T1
     f.write("matlabbatch{2}.spm.tools.hmri.create_mpm.subj.raw_mpm.T1 = {\n")
-    f.write("                                                            '%s'\n"%os.path.join(input_folder,"%s_%s_%s_T1_e1.nii" %(site,subject,session)))
-    f.write("                                                            '%s'\n"%os.path.join(input_folder,"%s_%s_%s_T1_e2.nii" %(site,subject,session)))
-    f.write("                                                            '%s'\n"%os.path.join(input_folder,"%s_%s_%s_T1_e3.nii" %(site,subject,session)))
-    f.write("                                                            '%s'\n"%os.path.join(input_folder,"%s_%s_%s_T1_e4.nii" %(site,subject,session)))
+    f.write("                                                            '%s'\n"%os.path.join(input_folder,"%s_%s_%s_T1w_e1.nii" %(site,subject,
+                                                                                                                                   session)))
+    f.write("                                                            '%s'\n"%os.path.join(input_folder,"%s_%s_%s_T1w_e2.nii" %(site,subject,
+                                                                                                                                   session)))
+    f.write("                                                            '%s'\n"%os.path.join(input_folder,"%s_%s_%s_T1w_e3.nii" %(site,subject,
+                                                                                                                                   session)))
+    f.write("                                                            '%s'\n"%os.path.join(input_folder,"%s_%s_%s_T1w_e4.nii" %(site,subject,
+                                                                                                                                   session)))
     f.write("                                                            };\n")
 
     # Disable popups and close file
