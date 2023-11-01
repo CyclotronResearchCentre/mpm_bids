@@ -286,6 +286,7 @@ def main():
     create_folder(os.path.join(path,"derivatives",site,sub,ses,"mpm"))
     create_folder(os.path.join(path,"derivatives",site,sub,ses,"qsm"))
 
+    # Denoising step with dwidenoise
     if den:
         mpm_in  = os.path.join(path,"derivatives",site,sub,ses,"mpm","denoised")
         prelim  = os.path.join(path,"derivatives",site,sub,ses,"mpm","prelim")
@@ -300,11 +301,16 @@ def main():
 
     combine_mpm(mpm_in,mpm_out,raw_folder)
     combine_qsm(mpm_out,qsm_out)
-    
+
+    # Motion correction: NOT APPLIED/RELEVANT FOR MPM, ONLY FOR QSM.
+    # MAF: Let's comment it for time saving purposes.
+    """
     path_moco = os.path.join(path,"derivatives",site,sub,ses,"qsm","moco")
     moco(mpm_out,path_moco,qsm_out)
+    """
 
     mpm(path, site, sub, ses, ptx)
+    #print('Done with MPM/QSM preprocessing. :)')
 
 def call_batch(filename): #
 
@@ -325,6 +331,10 @@ def mpm_ptx(path,site,subject,session):
     output_folder  = os.path.join(path,"derivatives",site,subject,session,"mpm","maps")
     b1_folder      = os.path.join(path,"derivatives",site,subject,session,"fmap")
     b1_raw         = os.path.join(path,site,subject,session,"fmap")
+
+    # MAF: For MPRAGE coregistration
+    mprage_folder = os.path.join(path,site,subject,session,"magn")
+    path2mprage =[os.path.join(mprage_folder, item) for item in os.listdir(mprage_folder) if '.nii' in item][0]
 
     f = open(filename_batch,"w")
 
@@ -371,6 +381,20 @@ def mpm_ptx(path,site,subject,session):
 
     # Disable popups and close file
     f.write("matlabbatch{2}.spm.tools.hmri.create_mpm.subj.popup = false;\n")
+
+    # MAF: Add the coregistration of MPRAGE to the MPM PDw image
+    f.write("matlabbatch{3}.spm.spatial.coreg.estwrite.ref(1) = cfg_dep('Create hMRI maps: PDw_subj1',substruct('.', 'val', '{}', {2}, '.', 'val', '{}', {1}, '.', 'val', '{}', {1}, '.', 'val', '{}', {1}), substruct('.', 'subj', '()', {1}, '.', 'PDw', '()', {':'}));\n")
+    f.write("matlabbatch{3}.spm.spatial.coreg.estwrite.source = {'%s,1'};\n" %(path2mprage))
+    f.write("matlabbatch{3}.spm.spatial.coreg.estwrite.other = {''};\n")
+    f.write("matlabbatch{3}.spm.spatial.coreg.estwrite.eoptions.cost_fun = 'nmi';\n")
+    f.write("matlabbatch{3}.spm.spatial.coreg.estwrite.eoptions.sep = [4 2 1 0.5];\n")
+    f.write("matlabbatch{3}.spm.spatial.coreg.estwrite.eoptions.tol = [0.02 0.02 0.02 0.001 0.001 0.001 0.01 0.01 0.01 0.001 0.001 0.001];\n")
+    f.write("matlabbatch{3}.spm.spatial.coreg.estwrite.eoptions.fwhm = [7 7];\n")
+    f.write("matlabbatch{3}.spm.spatial.coreg.estwrite.roptions.interp = 4;\n")
+    f.write("matlabbatch{3}.spm.spatial.coreg.estwrite.roptions.wrap = [0 0 0];\n")
+    f.write("matlabbatch{3}.spm.spatial.coreg.estwrite.roptions.mask = 0;\n")
+    f.write("matlabbatch{3}.spm.spatial.coreg.estwrite.roptions.prefix = 'cor2PDw_';\n")
+
     f.close()
 
     print(filename_batch)

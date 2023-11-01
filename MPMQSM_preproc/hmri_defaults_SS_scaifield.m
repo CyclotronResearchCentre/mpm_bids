@@ -374,8 +374,11 @@ hmri_def.MPMacq_set.vals{8}  = [33.5 33.5 4 25];
 % When enabling the imperfect spoiling correction, make sure the
 % coefficients retrieved in the list below are definitely calculated for
 % the protocol used!
-% hmri_def.imperfectSpoilCorr.enabled = false;
+%%% MAF DISABLED IMPERFECT SPOILING ON AUGUST 28th
+%%%% MAF RE-ENABLED IMPERFECT SPOILING ON OCTOBER 6TH
+%hmri_def.imperfectSpoilCorr.enabled = false;
 hmri_def.imperfectSpoilCorr.enabled = true;
+
 % 1) classic FIL protocol (Weiskopf et al., Neuroimage 2011):
 hmri_def.imperfectSpoilCorr.ClassicFIL.tag = 'Classic FIL protocol';
 hmri_def.imperfectSpoilCorr.ClassicFIL.P2_a = [78.9228195006542,-101.113338489192,47.8783287525126];
