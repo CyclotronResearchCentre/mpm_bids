@@ -62,19 +62,6 @@ def combine_complex(f, in_folder, out_folder, raw_folder):
     # create complex dataset
     comp = mag_data * np.exp(1.0j*pha_data)
 
-    # outcomment phase complex averaging, as it is not performed anymore
-    """# phase correction
-    pha_diff = np.angle(comp[...,1:]*np.conj(comp[...,:-1]))
-    sigma = np.zeros(len(pha_diff.shape))
-    sigma[:3] = 2
-    corr_real = gaussian_filter(np.cos(pha_diff), sigma=sigma)
-    corr_imag = gaussian_filter(np.sin(pha_diff), sigma=sigma)
-    corr = np.exp(1.0j*np.arctan2(corr_imag, corr_real))
-    comp[...,1:] *= np.conj(corr)
-
-    # average over readout direction
-    comp= np.sum(comp,axis=-1)"""
-
     if "_den" in filename:
         filename = filename[:-4]
         json_folder = raw_folder
@@ -88,7 +75,7 @@ def combine_complex(f, in_folder, out_folder, raw_folder):
     pha_im = nib.Nifti1Image(np.angle(comp), mag.affine,mag.header)
     nib.save(pha_im, os.path.join(out_folder, filename+"_ph.nii"))
 
-    """
+    
     # correct timings (ms/s conversion) in json files and save in mpm-output folder
     with open(os.path.join(json_folder,filename+".json"),"r+") as f:
         param = json.load(f)
@@ -97,7 +84,7 @@ def combine_complex(f, in_folder, out_folder, raw_folder):
 
     with open(os.path.join(out_folder,filename+".json"),"w") as f:
         json.dump(param,f,indent=4)
-    """
+    
 
 def combine_acquisitions(f, in_folder, out_folder):
     # create empty lists for magnitude and phase data
@@ -258,7 +245,6 @@ def moco(mpm_path,moco_path,qsm_path):
     combine_acquisitions_moco(first_im[0], moco_path, qsm_path)
     combine_acquisitions_moco(first_im[1], moco_path, qsm_path)
 
-
 def main():
     parser = argparse.ArgumentParser(
     description='Processing pipeline for MPM/QSM data in SCAIFIELD piloting.',
@@ -269,7 +255,8 @@ def main():
     parser.add_argument('--site', help='exact name of site (eg DZNE)', required=True)
     parser.add_argument('--sub',  help='exact name of subject (eg subj-01)', required=True)
     parser.add_argument('--ses',  help='exact name of session (eg ses-01)',  required=True)
-    parser.add_argument('--ptx',  help='create log file? default true',   default=True, action='store_true')
+    parser.add_argument('--ptx',  help='create log file? default true', action='store_true')
+    parser.add_argument('--name', help='name of the mpm subfolder, default = mpm',default = "mpm",required=False)
 
     args = parser.parse_args()
     path = args.path
@@ -278,22 +265,25 @@ def main():
     sub  = args.sub
     ses  = args.ses
     ptx  = args.ptx
+
+    name = args.name
     
-    raw_folder = os.path.join(path,site,sub,ses,"mpm")
+    raw_folder = os.path.join(path,site,sub,ses,name)
     create_folder(os.path.join(path,"derivatives"))
     create_folder(os.path.join(path,"derivatives",site))
     create_folder(os.path.join(path,"derivatives",site,sub))
     create_folder(os.path.join(path,"derivatives",site,sub,ses))
-    create_folder(os.path.join(path,"derivatives",site,sub,ses,"mpm"))
+    create_folder(os.path.join(path,"derivatives",site,sub,ses,name))
     create_folder(os.path.join(path,"derivatives",site,sub,ses,"qsm"))
+    
     if den:
-        mpm_in  = os.path.join(path,"derivatives",site,sub,ses,"mpm","denoised")
-        prelim  = os.path.join(path,"derivatives",site,sub,ses,"mpm","prelim")
-        #denoise(raw_folder,mpm_in,prelim)
+        mpm_in  = os.path.join(path,"derivatives",site,sub,ses,name,"denoised")
+        prelim  = os.path.join(path,"derivatives",site,sub,ses,name,"prelim")
+        denoise(raw_folder,mpm_in,prelim)
     else:
         mpm_in = raw_folder    
          
-    mpm_out = os.path.join(path,"derivatives",site,sub,ses,"mpm","ROCombine")
+    mpm_out = os.path.join(path,"derivatives",site,sub,ses,name,"ROCombine")
     qsm_out = os.path.join(path,"derivatives",site,sub,ses,"qsm","ROCombine")
     create_folder(mpm_out)
     create_folder(qsm_out)
@@ -303,7 +293,7 @@ def main():
     path_moco = os.path.join(path,"derivatives",site,sub,ses,"qsm","moco")
     moco(mpm_out,path_moco,qsm_out)
     
-    mpm(path, site, sub, ses, ptx)
+    mpm(path, site, sub, ses, ptx, name)
 
 def call_batch(filename):
     import matlab.engine as mat # move matlab import to here if matlab is not installed only this function fails
@@ -315,11 +305,11 @@ def call_batch(filename):
     eng.call_batch(filename,nargout=0)
     eng.quit()
 
-def mpm_ptx(path,site,subject,session):
+def mpm_ptx(path,site,subject,session,name):
     
-    filename_batch = os.path.join(path,"derivatives",site,subject,session,"mpm","spm_batch.m")
-    input_folder   = os.path.join(path,"derivatives",site,subject,session,"mpm","ROcombine")
-    output_folder  = os.path.join(path,"derivatives",site,subject,session,"mpm","maps")
+    filename_batch = os.path.join(path,"derivatives",site,subject,session,name,"spm_batch.m")
+    input_folder   = os.path.join(path,"derivatives",site,subject,session,name,"ROcombine")
+    output_folder  = os.path.join(path,"derivatives",site,subject,session,name,"maps")
     b1_folder      = os.path.join(path,"derivatives",site,subject,session,"fmap")
     b1_raw         = os.path.join(path,site,subject,session,"fmap")
 
@@ -373,10 +363,10 @@ def mpm_ptx(path,site,subject,session):
     print(filename_batch)
     call_batch(filename_batch)
 
-def mpm_cp(path,site,subject,session):
-    filename_batch = os.path.join(path,"derivatives",site,subject,session,"mpm","spm_batch.m")
-    input_folder   = os.path.join(path,"derivatives",site,subject,session,"mpm","ROcombine")
-    output_folder  = os.path.join(path,"derivatives",site,subject,session,"mpm","maps")
+def mpm_cp(path,site,subject,session,name):
+    filename_batch = os.path.join(path,"derivatives",site,subject,session,name,"spm_batch.m")
+    input_folder   = os.path.join(path,"derivatives",site,subject,session,name,"ROcombine")
+    output_folder  = os.path.join(path,"derivatives",site,subject,session,name,"maps")
     b1_folder      = os.path.join(path,site,subject,session,"fmap")
 
     f = open(filename_batch,"w")
@@ -394,10 +384,10 @@ def mpm_cp(path,site,subject,session):
     f.write("matlabbatch{2}.spm.tools.hmri.create_mpm.subj.sensitivity.RF_us = '-';\n")
 
     f.write("matlabbatch{2}.spm.tools.hmri.create_mpm.subj.b1_type.pre_processed_B1.b1input = {\n")
-    f.write("                                                                                  '%s,1'\n"%os.path.join(b1_folder,"%s_%s_%s_fmap_b1_con.nii" %(site,subject,session)))
-    f.write("                                                                                  '%s,1'\n"%os.path.join(b1_folder,"%s_%s_%s_fmap_b1.nii" %(site,subject,session)))
+    f.write("                                                                                  '%s,1'\n"%os.path.join(b1_folder,"%s_%s_%s_fmap-3dream.nii" %(site,subject,session)))
+    f.write("                                                                                  '%s,1'\n"%os.path.join(b1_folder,"%s_%s_%s_fmap-CP.nii" %(site,subject,session)))
     f.write("                                                                                  };\n")
-    f.write("matlabbatch{2}.spm.tools.hmri.create_mpm.subj.b1_type.pre_processed_B1.scafac = %f;\n" %(335/2400)) #correct for differences in refVol
+    f.write("matlabbatch{2}.spm.tools.hmri.create_mpm.subj.b1_type.pre_processed_B1.scafac = %f;\n" %(0.1)) #correct for differences in refVol
 
 
     # input data MT
@@ -431,11 +421,13 @@ def mpm_cp(path,site,subject,session):
     print(filename_batch)
     call_batch(filename_batch)
 
-def mpm(path, site, subject, session, isptxdata):
+def mpm(path, site, subject, session, isptxdata, name):
     if isptxdata:
-        mpm_ptx(path,site,subject,session)
+        print("ptx")
+        mpm_ptx(path,site,subject,session,name)
     else:
-        mpm_cp(path,site,subject,session)
+        print("cp")
+        mpm_cp(path,site,subject,session,name)
 
 if __name__ == '__main__':
     sys.exit(main())
