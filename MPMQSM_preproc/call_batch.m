@@ -1,9 +1,10 @@
 function call_batch(path_to_batch)
-    hmri_path = '/Users/voelzkey/Desktop/CodeMatlab/hMRI-toolbox-0.2.4';
-    SPM_path  = '/Users/voelzkey/Desktop/CodeMatlab/spm12';
-
+    [filepath,name,ext] = fileparts(mfilename("fullpath"));
+    hmri_path = fullfile(filepath, '..', 'hMRI-toolbox');
+    spm_path = fullfile(filepath, '..', 'spm12');
+    
+    addpath(genpath(spm_path));
     addpath(hmri_path);
-    addpath(genpath(SPM_path));
     disp("path addded")
 
     run(path_to_batch)
