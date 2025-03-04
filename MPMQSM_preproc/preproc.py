@@ -301,9 +301,11 @@ def main():
 def calc_B1rms(path, site, sub, ses, pulse="SCAIFIELD"):
     def get_amps(pulse):
         if pulse == "SCAIFIELD":
-            path_ini = "EP3D_mtsaturation.ini"
+            path_ini = os.path.join(os.path.dirname(__file__), "EP3D_mtsaturation.ini")
             idx = [249,749]
             scale = 49161
+        else:
+            raise ValueError("MT Pulse not implemented")
 
         config = configparser.ConfigParser()
         config.read(path_ini)
