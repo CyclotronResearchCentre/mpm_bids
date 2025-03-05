@@ -64,8 +64,7 @@ hmri_def.json = struct('extended',false,'separate',true,'anonym','none',...
 % provides a series of tissue probability maps. These TPMs could be
 % replaced by other TPMs, to better match the population studied. 
 % ADVANCED USER ONLY.
-%hmri_def.TPM = fullfile('/home/siya/Downloads/software/SPM_v2/toolbox_download/hMRI-toolbox','etpm','eTPM.nii');
-hmri_def.TPM = fullfile('/Users/voelzkey/Desktop/CodeMatlab/hMRI-toolbox-0.2.4/etpm','eTPM.nii');
+hmri_def.TPM = fullfile(fileparts(which('hmri_get_version')), 'etpm', 'eTPM.nii');
 % default template for auto-reorientation. The template can be selected
 % within the Auto-reorient module. The following is the default suggested
 % for T1w images. Please refer to the Auto-reorient documentation for an
