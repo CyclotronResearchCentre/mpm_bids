@@ -4,8 +4,8 @@ import nibabel as nib
 import json
 import sys
 import argparse
+import shlex
 
-from scipy.ndimage import gaussian_filter
 import shutil
 import configparser
 
@@ -114,7 +114,20 @@ def create_folder(path):
     if not os.path.isdir(path):
         os.mkdir(path)
 
-def denoise(in_folder, out_folder,prelim):
+
+def run_shell_command(command, singularity_container=None):
+    """Run command directly or inside a Singularity container."""
+    if singularity_container:
+        full_command = f"singularity exec {shlex.quote(singularity_container)} {command}"
+    else:
+        full_command = command
+
+    print(full_command)
+    exit_code = os.system(full_command)
+    if exit_code != 0:
+        raise RuntimeError(f"Command failed with exit code {exit_code}: {full_command}")
+
+def denoise(in_folder, out_folder, prelim, singularity_container=None):
     print(out_folder, prelim)
     create_folder(out_folder)
     create_folder(prelim)
@@ -126,25 +139,25 @@ def denoise(in_folder, out_folder,prelim):
     for f in files:
         command_magn += " %s" % os.path.join(in_folder,f)
     print(command_magn)
-    os.system(command_magn)
+    run_shell_command(command_magn, singularity_container)
     
     command_pha = "fslmerge -t %s/pha.nii" %prelim
     for f in files:
         command_pha += " %s" % os.path.join(in_folder,f[:-4]+"_ph.nii")
-    os.system(command_pha)
+    run_shell_command(command_pha, singularity_container)
 
-    os.system("mrcalc %s/pha.nii.gz 0.000766990393943 -mult %s/tmp_pha.nii.gz" %(prelim,prelim))
+    run_shell_command("mrcalc %s/pha.nii.gz 0.000766990393943 -mult %s/tmp_pha.nii.gz" %(prelim,prelim), singularity_container)
 
-    os.system("mrcalc %s/magn.nii.gz %s/tmp_pha.nii.gz -polar %s/tmp_comp.mif --force" %(prelim,prelim,prelim))
+    run_shell_command("mrcalc %s/magn.nii.gz %s/tmp_pha.nii.gz -polar %s/tmp_comp.mif --force" %(prelim,prelim,prelim), singularity_container)
 
-    os.system("dwidenoise %s/tmp_comp.mif %s/out.mif" %(prelim,prelim))
+    run_shell_command("dwidenoise %s/tmp_comp.mif %s/out.mif" %(prelim,prelim), singularity_container)
 
-    os.system("mrcalc %s/out.mif -abs %s/out_magn.nii --force" %(prelim,prelim))
-    os.system("mrcalc %s/out.mif -phase %s/out_phas.nii --force" %(prelim,prelim))
+    run_shell_command("mrcalc %s/out.mif -abs %s/out_magn.nii --force" %(prelim,prelim), singularity_container)
+    run_shell_command("mrcalc %s/out.mif -phase %s/out_phas.nii --force" %(prelim,prelim), singularity_container)
     
     for i in range(len(files)):
-        os.system("fslroi %s/out_magn.nii %s %i 1" %(prelim,os.path.join(out_folder,files[i][:-4]+"_den.nii"), i))
-        os.system("fslroi %s/out_phas.nii %s %i 1" %(prelim,os.path.join(out_folder,files[i][:-4]+"_den_ph.nii"), i))
+        run_shell_command("fslroi %s/out_magn.nii %s %i 1" %(prelim,os.path.join(out_folder,files[i][:-4]+"_den.nii"), i), singularity_container)
+        run_shell_command("fslroi %s/out_phas.nii %s %i 1" %(prelim,os.path.join(out_folder,files[i][:-4]+"_den_ph.nii"), i), singularity_container)
 
     shutil.rmtree(prelim, ignore_errors=True)
 
@@ -171,7 +184,7 @@ def combine_acquisitions_moco(f, in_folder, out_folder):
     pha_im = nib.Nifti1Image(np.moveaxis(np.array(comb_pha),0,-1), real.affine,real.header)
     nib.save(pha_im, os.path.join(out_folder, filename+"_pha_roc.nii"))
 
-def moco(mpm_path,moco_path,qsm_path):
+def moco(mpm_path, moco_path, qsm_path, singularity_container=None):
     create_folder(moco_path)
     files = os.listdir(mpm_path)
     print(files)
@@ -192,8 +205,8 @@ def moco(mpm_path,moco_path,qsm_path):
     out_file = os.path.join(moco_path, first_im[0][:-4])
     commandMT = "flirt -in %s -out %s -ref %s -omat MT.mat" %(in_file, out_file, ref_file)
 
-    os.system(commandMT)
-    os.system(commandPD)
+    run_shell_command(commandMT, singularity_container)
+    run_shell_command(commandPD, singularity_container)
 
     PD_files = [f for f in files if "_pd_" in f]
     PD_files = sorted([f[:-4] for f in PD_files if ((".nii" in f) and ("ph.nii" not in f))])
@@ -225,23 +238,23 @@ def moco(mpm_path,moco_path,qsm_path):
         in_file  = os.path.join(moco_path, f+"_real")
         out_file = os.path.join(moco_path, f+"_real_moco")
         command  = "flirt -ref %s -in %s -out %s -applyxfm -init PD.mat" % (ref_file, in_file, out_file)
-        os.system(command)
+        run_shell_command(command, singularity_container)
         
         in_file  = os.path.join(moco_path, f+"_imag")
         out_file = os.path.join(moco_path, f+"_imag_moco")
         command  = "flirt -ref %s -in %s -out %s -applyxfm -init PD.mat" % (ref_file, in_file, out_file)
-        os.system(command)
+        run_shell_command(command, singularity_container)
         
     for f in MT_files:
         in_file  = os.path.join(moco_path, f+"_real")
         out_file = os.path.join(moco_path, f+"_real_moco")
         command  = "flirt -ref %s -in %s -out %s -applyxfm -init MT.mat" % (ref_file, in_file, out_file)
-        os.system(command)
+        run_shell_command(command, singularity_container)
         
         in_file  = os.path.join(moco_path, f+"_imag")
         out_file = os.path.join(moco_path, f+"_imag_moco")
         command  = "flirt -ref %s -in %s -out %s -applyxfm -init MT.mat" % (ref_file, in_file, out_file)
-        os.system(command)
+        run_shell_command(command, singularity_container)
 
     combine_acquisitions_moco(first_im[0], moco_path, qsm_path)
     combine_acquisitions_moco(first_im[1], moco_path, qsm_path)
@@ -258,6 +271,7 @@ def main():
     parser.add_argument('--ses',  help='exact name of session (eg ses-01)',  required=True)
     parser.add_argument('--ptx',  help='create log file? default true', action='store_true')
     parser.add_argument('--name', help='name of the mpm subfolder, default = mpm',default = "mpm",required=False)
+    parser.add_argument('--container', help='Path to Singularity container with FSL and MRtrix binaries.', required=False, default=None)
 
     args = parser.parse_args()
     path = args.path
@@ -266,6 +280,7 @@ def main():
     sub  = args.sub
     ses  = args.ses
     ptx  = args.ptx
+    singularity_container = args.container
 
     name = args.name
     
@@ -282,7 +297,7 @@ def main():
     if den:
         mpm_in  = os.path.join(path,"derivatives",site,sub,ses,name,"denoised")
         prelim  = os.path.join(path,"derivatives",site,sub,ses,name,"prelim")
-        denoise(raw_folder,mpm_in,prelim)
+        denoise(raw_folder, mpm_in, prelim, singularity_container=singularity_container)
     else:
         mpm_in = raw_folder    
          
@@ -294,7 +309,7 @@ def main():
     combine_qsm(mpm_out,qsm_out)
     
     path_moco = os.path.join(path,"derivatives",site,sub,ses,"qsm","moco")
-    #moco(mpm_out,path_moco,qsm_out)
+    #moco(mpm_out, path_moco, qsm_out, singularity_container=singularity_container)
     
     mpm(path, site, sub, ses, ptx, name)
 
