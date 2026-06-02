@@ -316,25 +316,24 @@ def main():
 def calc_B1rms(path, site, sub, ses, pulse="SCAIFIELD"):
     def get_amps(pulse):
         if pulse == "SCAIFIELD":
-            path_ini = os.path.join(os.path.dirname(__file__), "EP3D_mtsaturation.ini")
-            idx = [249,749]
-            scale = 49161
-        else:
-            raise ValueError("MT Pulse not implemented")
+            dirname, filename = os.path.split(os.path.abspath(__file__))
+            path_ini = os.path.join(dirname,"EP3D_pushmt_yv.ini")
+            
 
         config = configparser.ConfigParser()
         config.read(path_ini)
+        points = int(config["pTXPulse"].get("Samples"))
 
         amp = []
 
         for c in range(8):
             helper=[]
-            for i in idx:
+            for i in range(points):
                 helper.append(config["pTXPulse_ch%i" % c].get("RF[%i]" %(i)).split("\t"))
 
             amp.append([float(h[0])*np.exp(1j*float(h[1])) for h in helper])
 
-        amp= np.array(amp)/scale
+        amp= np.array(amp)*100 #1 degree is .01uT
         return amp
 
     path_b1Out = os.path.join(path,"derivatives",site,sub,ses,"fmap")
@@ -346,6 +345,12 @@ def calc_B1rms(path, site, sub, ses, pulse="SCAIFIELD"):
 
     b1rmsFile = os.path.join(path_b1Out, "%s_%s_%s_fmap-B1SC_b1rms.nii"%(site,sub,ses))
 
+    with open(b1magFile[:-3]+"json") as json_file:
+        header = json.load(json_file)
+        ref = float(header['ImageComments'].split()[5][:-1])
+        print(ref)
+    norm = 500 / 42.577 #get from Hertz to uT
+
     mag = nib.load(b1magFile)
     header = mag.header
     affine = mag.affine      
@@ -354,14 +359,18 @@ def calc_B1rms(path, site, sub, ses, pulse="SCAIFIELD"):
     # load phase B1
     pha = nib.load(b1phaFile).get_fdata()
     B1 = mag*np.exp(1j*(pha-2048)/1800*np.pi) # compensate for weird scaling in phase maps
+    B1 = norm * B1/1000 / ref
 
     amp = get_amps(pulse)
+    print(amp.shape)
+    print(B1.shape)
 
     # calculate B1 per subpulse
-    B1rms = np.sqrt((abs(B1@amp[:,0])**2+abs(B1@amp[:,1])**2)/2)
+    B1rms = np.sqrt(np.mean(abs(B1@amp)**2,axis=-1))
 
     b1rms_nifti = nib.Nifti1Image(B1rms, affine, header=header)
     nib.save(b1rms_nifti, b1rmsFile)
+
 
 
 def call_batch(filename):

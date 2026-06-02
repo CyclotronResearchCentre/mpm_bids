@@ -413,6 +413,9 @@ hmri_def.imperfectSpoilCorr.Unknown.tag = 'Unknown protocol. No spoiling correct
 
 hmri_b1_standard_defaults;
 
+hmri_def.MTsatB1CorrectionModel = 'helms'; % 'helms' or 'lipp'
+hmri_def.MTsatB1CorrectionHelmsC = 0.18; % This value comes from B1 optimiation (see Völzke et al ESMRMB2026)
+
 %==========================================================================
 % Maps processing parameters
 %==========================================================================
