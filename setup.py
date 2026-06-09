@@ -13,7 +13,7 @@ setup(name='MPMQSM_preproc',
       author_email='yannik.voelzke@dzne.de',
       license='MIT',
       packages=['MPMQSM_preproc'],
-      package_data={'MPMQSM_preproc': ['EP3D_mtsaturation.ini', 'spm12/**/*', 'hMRI-toolbox/**/*', 'call_batch.m', 'hmri_defaults_SS_scaifield.m']},
+      package_data={'MPMQSM_preproc': ['EP3D_mtsaturation.ini', 'EP3D_pushmt_yv.ini', 'spm12/**/*', 'hMRI-toolbox/**/*', 'call_batch.m', 'hmri_defaults_SS_scaifield.m']},
       include_package_data=True,
       entry_points={'console_scripts': ['mpmqsm_preproc   = MPMQSM_preproc.preproc:main'
                                         ]})
