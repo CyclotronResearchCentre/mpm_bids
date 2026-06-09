@@ -11,7 +11,7 @@ import configparser
 
 """
 This scripts creates readout combined images from the raw MPM/QSM acquisitions
-It saves these data in the format that is needed for MPM and QSM in derivatives/subject/site/session/mpm and derivatives/subject/site/session/mpm, respectively
+It saves these data in the format that is needed for MPM and QSM in derivatives/subject/session/mpm and derivatives/subject/session/qsm, respectively
 """
 
 def combine_mpm(in_folder, out_folder, raw_folder):
@@ -266,7 +266,6 @@ def main():
 
     parser.add_argument('--path', help='path to MPM/QSM data, folder, where the BIDS structure originates ', required=True)
     parser.add_argument('--den',  help='boolean, shall the raw data be denoised? default = true ', required=False, default=True)
-    parser.add_argument('--site', help='exact name of site (eg DZNE)', required=True)
     parser.add_argument('--sub',  help='exact name of subject (eg subj-01)', required=True)
     parser.add_argument('--ses',  help='exact name of session (eg ses-01)',  required=True)
     parser.add_argument('--ptx',  help='create log file? default true', action='store_true')
@@ -276,7 +275,6 @@ def main():
     args = parser.parse_args()
     path = args.path
     den  = args.den
-    site = args.site
     sub  = args.sub
     ses  = args.ses
     ptx  = args.ptx
@@ -284,36 +282,35 @@ def main():
 
     name = args.name
     
-    raw_folder = os.path.join(path,site,sub,ses,name)
+    raw_folder = os.path.join(path,"Nifti",sub,ses,name)
     create_folder(os.path.join(path,"derivatives"))
-    create_folder(os.path.join(path,"derivatives",site))
-    create_folder(os.path.join(path,"derivatives",site,sub))
-    create_folder(os.path.join(path,"derivatives",site,sub,ses))
-    create_folder(os.path.join(path,"derivatives",site,sub,ses,name))
-    create_folder(os.path.join(path,"derivatives",site,sub,ses,"qsm"))
+    create_folder(os.path.join(path,"derivatives",sub))
+    create_folder(os.path.join(path,"derivatives",sub,ses))
+    create_folder(os.path.join(path,"derivatives",sub,ses,name))
+    create_folder(os.path.join(path,"derivatives",sub,ses,"qsm"))
 
-    calc_B1rms(path, site, sub, ses, pulse="SCAIFIELD")
+    calc_B1rms(path, sub, ses, pulse="SCAIFIELD")
     
     if den:
-        mpm_in  = os.path.join(path,"derivatives",site,sub,ses,name,"denoised")
-        prelim  = os.path.join(path,"derivatives",site,sub,ses,name,"prelim")
+        mpm_in  = os.path.join(path,"derivatives",sub,ses,name,"denoised")
+        prelim  = os.path.join(path,"derivatives",sub,ses,name,"prelim")
         denoise(raw_folder, mpm_in, prelim, singularity_container=singularity_container)
     else:
         mpm_in = raw_folder    
          
-    mpm_out = os.path.join(path,"derivatives",site,sub,ses,name,"ROCombine")
-    qsm_out = os.path.join(path,"derivatives",site,sub,ses,"qsm","ROCombine")
+    mpm_out = os.path.join(path,"derivatives",sub,ses,name,"ROCombine")
+    qsm_out = os.path.join(path,"derivatives",sub,ses,"qsm","ROCombine")
     create_folder(mpm_out)
     create_folder(qsm_out)
     combine_mpm(mpm_in,mpm_out,raw_folder)
     combine_qsm(mpm_out,qsm_out)
     
-    path_moco = os.path.join(path,"derivatives",site,sub,ses,"qsm","moco")
+    path_moco = os.path.join(path,"derivatives",sub,ses,"qsm","moco")
     #moco(mpm_out, path_moco, qsm_out, singularity_container=singularity_container)
     
-    mpm(path, site, sub, ses, ptx, name)
+    mpm(path, sub, ses, ptx, name)
 
-def calc_B1rms(path, site, sub, ses, pulse="SCAIFIELD"):
+def calc_B1rms(path, sub, ses, pulse="SCAIFIELD"):
     def get_amps(pulse):
         if pulse == "SCAIFIELD":
             dirname, filename = os.path.split(os.path.abspath(__file__))
@@ -336,14 +333,14 @@ def calc_B1rms(path, site, sub, ses, pulse="SCAIFIELD"):
         amp= np.array(amp)*100 #1 degree is .01uT
         return amp
 
-    path_b1Out = os.path.join(path,"derivatives",site,sub,ses,"fmap")
-    path_b1In  = os.path.join(path,site,sub,ses,"fmap")
+    path_b1Out = os.path.join(path,"derivatives",sub,ses,"fmap")
+    path_b1In  = os.path.join(path,"Nifti",sub,ses,"fmap")
     create_folder(path_b1Out)
 
-    b1magFile = os.path.join(path_b1In, "%s_%s_%s_fmap-B1SC.nii"%(site,sub,ses))
-    b1phaFile = os.path.join(path_b1In, "%s_%s_%s_fmap-B1SC_ph.nii"%(site,sub,ses))
+    b1magFile = os.path.join(path_b1In, "%s_%s_fmap-B1SC.nii"%(sub,ses))
+    b1phaFile = os.path.join(path_b1In, "%s_%s_fmap-B1SC_ph.nii"%(sub,ses))
 
-    b1rmsFile = os.path.join(path_b1Out, "%s_%s_%s_fmap-B1SC_b1rms.nii"%(site,sub,ses))
+    b1rmsFile = os.path.join(path_b1Out, "%s_%s_fmap-B1SC_b1rms.nii"%(sub,ses))
 
     with open(b1magFile[:-3]+"json") as json_file:
         header = json.load(json_file)
@@ -383,13 +380,13 @@ def call_batch(filename):
     eng.call_batch(filename,nargout=0)
     eng.quit()
 
-def mpm_ptx(path,site,subject,session,name):
+def mpm_ptx(path,subject,session,name):
     
-    filename_batch = os.path.join(path,"derivatives",site,subject,session,name,"spm_batch.m")
-    input_folder   = os.path.join(path,"derivatives",site,subject,session,name,"ROCombine")
-    output_folder  = os.path.join(path,"derivatives",site,subject,session,name,"maps")
-    b1_folder      = os.path.join(path,"derivatives",site,subject,session,"fmap")
-    b1_raw         = os.path.join(path,site,subject,session,"fmap")
+    filename_batch = os.path.join(path,"derivatives",subject,session,name,"spm_batch.m")
+    input_folder   = os.path.join(path,"derivatives",subject,session,name,"ROCombine")
+    output_folder  = os.path.join(path,"derivatives",subject,session,name,"maps")
+    b1_folder      = os.path.join(path,"derivatives",subject,session,"fmap")
+    b1_raw         = os.path.join(path,"Nifti",subject,session,"fmap")
 
     f = open(filename_batch,"w")
 
@@ -404,40 +401,40 @@ def mpm_ptx(path,site,subject,session,name):
 
     f.write("matlabbatch{2}.spm.tools.hmri.create_mpm.subj.output.outdir = {'%s'};\n" %output_folder)
     f.write("matlabbatch{2}.spm.tools.hmri.create_mpm.subj.b1_type.b1_MT.b1_type.pre_processed_B1.b1input = {\n")
-    f.write("                                                                                                '%s,1'\n"%os.path.join(b1_raw,"%s_%s_%s_fmap-afi-con.nii" %(site,subject,session)))
-    f.write("                                                                                                '%s,1'\n"%os.path.join(b1_raw,"%s_%s_%s_fmap-afi.nii" %(site,subject,session)))
+    f.write("                                                                                                '%s,1'\n"%os.path.join(b1_raw,"%s_%s_fmap-afi-con.nii" %(subject,session)))
+    f.write("                                                                                                '%s,1'\n"%os.path.join(b1_raw,"%s_%s_fmap-afi.nii" %(subject,session)))
     f.write("                                                                                  };\n")
     f.write("matlabbatch{2}.spm.tools.hmri.create_mpm.subj.b1_type.b1_MT.b1_type.pre_processed_B1.scafac = .1;\n")
     f.write("matlabbatch{2}.spm.tools.hmri.create_mpm.subj.b1_type.b1_MT.b1_type.pre_processed_B1.b1parameters.b1metadata = 'yes';\n")
     f.write("matlabbatch{2}.spm.tools.hmri.create_mpm.subj.b1_type.b1_MT.b1_type_MT.pre_processed_B1.b1input = {\n")
-    f.write("                                                                                                '%s,1'\n"%os.path.join(b1_raw,"%s_%s_%s_fmap-B1SC-con.nii" %(site,subject,session)))
-    f.write("                                                                                                '%s,1'\n"%os.path.join(b1_folder,"%s_%s_%s_fmap-B1SC_b1rms.nii" %(site,subject,session)))
+    f.write("                                                                                                '%s,1'\n"%os.path.join(b1_raw,"%s_%s_fmap-B1SC-con.nii" %(subject,session)))
+    f.write("                                                                                                '%s,1'\n"%os.path.join(b1_folder,"%s_%s_fmap-B1SC_b1rms.nii" %(subject,session)))
     f.write("                                                                                  };\n")
     f.write("matlabbatch{2}.spm.tools.hmri.create_mpm.subj.b1_type.b1_MT.b1_type_MT.pre_processed_B1.scafac = 100;\n")
     f.write("matlabbatch{2}.spm.tools.hmri.create_mpm.subj.b1_type.b1_MT.b1_type_MT.pre_processed_B1.b1metadata = 'yes';\n")
 
     # input data MT
     f.write("matlabbatch{2}.spm.tools.hmri.create_mpm.subj.raw_mpm.MT = {\n")
-    f.write("                                                            '%s'\n"%os.path.join(input_folder,"%s_%s_%s_mpm_mt_e1.nii" %(site,subject,session)))
-    f.write("                                                            '%s'\n"%os.path.join(input_folder,"%s_%s_%s_mpm_mt_e2.nii" %(site,subject,session)))
-    f.write("                                                            '%s'\n"%os.path.join(input_folder,"%s_%s_%s_mpm_mt_e3.nii" %(site,subject,session)))
-    f.write("                                                            '%s'\n"%os.path.join(input_folder,"%s_%s_%s_mpm_mt_e4.nii" %(site,subject,session)))
+    f.write("                                                            '%s'\n"%os.path.join(input_folder,"%s_%s_mpm_mt_e1.nii" %(subject,session)))
+    f.write("                                                            '%s'\n"%os.path.join(input_folder,"%s_%s_mpm_mt_e2.nii" %(subject,session)))
+    f.write("                                                            '%s'\n"%os.path.join(input_folder,"%s_%s_mpm_mt_e3.nii" %(subject,session)))
+    f.write("                                                            '%s'\n"%os.path.join(input_folder,"%s_%s_mpm_mt_e4.nii" %(subject,session)))
     f.write("                                                            };\n")
 
     # input data PD
     f.write("matlabbatch{2}.spm.tools.hmri.create_mpm.subj.raw_mpm.PD = {\n")
-    f.write("                                                            '%s'\n"%os.path.join(input_folder,"%s_%s_%s_mpm_pd_e1.nii" %(site,subject,session)))
-    f.write("                                                            '%s'\n"%os.path.join(input_folder,"%s_%s_%s_mpm_pd_e2.nii" %(site,subject,session)))
-    f.write("                                                            '%s'\n"%os.path.join(input_folder,"%s_%s_%s_mpm_pd_e3.nii" %(site,subject,session)))
-    f.write("                                                            '%s'\n"%os.path.join(input_folder,"%s_%s_%s_mpm_pd_e4.nii" %(site,subject,session)))
+    f.write("                                                            '%s'\n"%os.path.join(input_folder,"%s_%s_mpm_pd_e1.nii" %(subject,session)))
+    f.write("                                                            '%s'\n"%os.path.join(input_folder,"%s_%s_mpm_pd_e2.nii" %(subject,session)))
+    f.write("                                                            '%s'\n"%os.path.join(input_folder,"%s_%s_mpm_pd_e3.nii" %(subject,session)))
+    f.write("                                                            '%s'\n"%os.path.join(input_folder,"%s_%s_mpm_pd_e4.nii" %(subject,session)))
     f.write("                                                            };\n")
 
     # input data T1
     f.write("matlabbatch{2}.spm.tools.hmri.create_mpm.subj.raw_mpm.T1 = {\n")
-    f.write("                                                            '%s'\n"%os.path.join(input_folder,"%s_%s_%s_mpm_t1_e1.nii" %(site,subject,session)))
-    f.write("                                                            '%s'\n"%os.path.join(input_folder,"%s_%s_%s_mpm_t1_e2.nii" %(site,subject,session)))
-    f.write("                                                            '%s'\n"%os.path.join(input_folder,"%s_%s_%s_mpm_t1_e3.nii" %(site,subject,session)))
-    f.write("                                                            '%s'\n"%os.path.join(input_folder,"%s_%s_%s_mpm_t1_e4.nii" %(site,subject,session)))
+    f.write("                                                            '%s'\n"%os.path.join(input_folder,"%s_%s_mpm_t1_e1.nii" %(subject,session)))
+    f.write("                                                            '%s'\n"%os.path.join(input_folder,"%s_%s_mpm_t1_e2.nii" %(subject,session)))
+    f.write("                                                            '%s'\n"%os.path.join(input_folder,"%s_%s_mpm_t1_e3.nii" %(subject,session)))
+    f.write("                                                            '%s'\n"%os.path.join(input_folder,"%s_%s_mpm_t1_e4.nii" %(subject,session)))
     f.write("                                                            };\n")
 
     # Disable popups and close file
@@ -447,11 +444,11 @@ def mpm_ptx(path,site,subject,session,name):
     print(filename_batch)
     call_batch(filename_batch)
 
-def mpm_cp(path,site,subject,session,name):
-    filename_batch = os.path.join(path,"derivatives",site,subject,session,name,"spm_batch.m")
-    input_folder   = os.path.join(path,"derivatives",site,subject,session,name,"ROCombine")
-    output_folder  = os.path.join(path,"derivatives",site,subject,session,name,"maps")
-    b1_folder      = os.path.join(path,site,subject,session,"fmap")
+def mpm_cp(path,subject,session,name):
+    filename_batch = os.path.join(path,"derivatives",subject,session,name,"spm_batch.m")
+    input_folder   = os.path.join(path,"derivatives",subject,session,name,"ROCombine")
+    output_folder  = os.path.join(path,"derivatives",subject,session,name,"maps")
+    b1_folder      = os.path.join(path,"Nifti",subject,session,"fmap")
 
     f = open(filename_batch,"w")
 
@@ -468,34 +465,34 @@ def mpm_cp(path,site,subject,session,name):
     f.write("matlabbatch{2}.spm.tools.hmri.create_mpm.subj.sensitivity.RF_us = '-';\n")
 
     f.write("matlabbatch{2}.spm.tools.hmri.create_mpm.subj.b1_type.pre_processed_B1.b1input = {\n")
-    f.write("                                                                                  '%s,1'\n"%os.path.join(b1_folder,"%s_%s_%s_fmap-3dream.nii" %(site,subject,session)))
-    f.write("                                                                                  '%s,1'\n"%os.path.join(b1_folder,"%s_%s_%s_fmap-CP.nii" %(site,subject,session)))
+    f.write("                                                                                  '%s,1'\n"%os.path.join(b1_folder,"%s_%s_fmap-3dream.nii" %(subject,session)))
+    f.write("                                                                                  '%s,1'\n"%os.path.join(b1_folder,"%s_%s_fmap-CP.nii" %(subject,session)))
     f.write("                                                                                  };\n")
     f.write("matlabbatch{2}.spm.tools.hmri.create_mpm.subj.b1_type.pre_processed_B1.scafac = %f;\n" %(0.1)) #correct for differences in refVol
 
 
     # input data MT
     f.write("matlabbatch{2}.spm.tools.hmri.create_mpm.subj.raw_mpm.MT = {\n")
-    f.write("                                                            '%s'\n"%os.path.join(input_folder,"%s_%s_%s_mpm_mt_e1.nii" %(site,subject,session)))
-    f.write("                                                            '%s'\n"%os.path.join(input_folder,"%s_%s_%s_mpm_mt_e2.nii" %(site,subject,session)))
-    f.write("                                                            '%s'\n"%os.path.join(input_folder,"%s_%s_%s_mpm_mt_e3.nii" %(site,subject,session)))
-    f.write("                                                            '%s'\n"%os.path.join(input_folder,"%s_%s_%s_mpm_mt_e4.nii" %(site,subject,session)))
+    f.write("                                                            '%s'\n"%os.path.join(input_folder,"%s_%s_mpm_mt_e1.nii" %(subject,session)))
+    f.write("                                                            '%s'\n"%os.path.join(input_folder,"%s_%s_mpm_mt_e2.nii" %(subject,session)))
+    f.write("                                                            '%s'\n"%os.path.join(input_folder,"%s_%s_mpm_mt_e3.nii" %(subject,session)))
+    f.write("                                                            '%s'\n"%os.path.join(input_folder,"%s_%s_mpm_mt_e4.nii" %(subject,session)))
     f.write("                                                            };\n")
 
     # input data PD
     f.write("matlabbatch{2}.spm.tools.hmri.create_mpm.subj.raw_mpm.PD = {\n")
-    f.write("                                                            '%s'\n"%os.path.join(input_folder,"%s_%s_%s_mpm_pd_e1.nii" %(site,subject,session)))
-    f.write("                                                            '%s'\n"%os.path.join(input_folder,"%s_%s_%s_mpm_pd_e2.nii" %(site,subject,session)))
-    f.write("                                                            '%s'\n"%os.path.join(input_folder,"%s_%s_%s_mpm_pd_e3.nii" %(site,subject,session)))
-    f.write("                                                            '%s'\n"%os.path.join(input_folder,"%s_%s_%s_mpm_pd_e4.nii" %(site,subject,session)))
+    f.write("                                                            '%s'\n"%os.path.join(input_folder,"%s_%s_mpm_pd_e1.nii" %(subject,session)))
+    f.write("                                                            '%s'\n"%os.path.join(input_folder,"%s_%s_mpm_pd_e2.nii" %(subject,session)))
+    f.write("                                                            '%s'\n"%os.path.join(input_folder,"%s_%s_mpm_pd_e3.nii" %(subject,session)))
+    f.write("                                                            '%s'\n"%os.path.join(input_folder,"%s_%s_mpm_pd_e4.nii" %(subject,session)))
     f.write("                                                            };\n")
 
     # input data T1
     f.write("matlabbatch{2}.spm.tools.hmri.create_mpm.subj.raw_mpm.T1 = {\n")
-    f.write("                                                            '%s'\n"%os.path.join(input_folder,"%s_%s_%s_mpm_t1_e1.nii" %(site,subject,session)))
-    f.write("                                                            '%s'\n"%os.path.join(input_folder,"%s_%s_%s_mpm_t1_e2.nii" %(site,subject,session)))
-    f.write("                                                            '%s'\n"%os.path.join(input_folder,"%s_%s_%s_mpm_t1_e3.nii" %(site,subject,session)))
-    f.write("                                                            '%s'\n"%os.path.join(input_folder,"%s_%s_%s_mpm_t1_e4.nii" %(site,subject,session)))
+    f.write("                                                            '%s'\n"%os.path.join(input_folder,"%s_%s_mpm_t1_e1.nii" %(subject,session)))
+    f.write("                                                            '%s'\n"%os.path.join(input_folder,"%s_%s_mpm_t1_e2.nii" %(subject,session)))
+    f.write("                                                            '%s'\n"%os.path.join(input_folder,"%s_%s_mpm_t1_e3.nii" %(subject,session)))
+    f.write("                                                            '%s'\n"%os.path.join(input_folder,"%s_%s_mpm_t1_e4.nii" %(subject,session)))
     f.write("                                                            };\n")
 
     # Disable popups and close file
@@ -505,13 +502,13 @@ def mpm_cp(path,site,subject,session,name):
     print(filename_batch)
     call_batch(filename_batch)
 
-def mpm(path, site, subject, session, isptxdata, name):
+def mpm(path, subject, session, isptxdata, name):
     if isptxdata:
         print("ptx")
-        mpm_ptx(path,site,subject,session,name)
+        mpm_ptx(path,subject,session,name)
     else:
         print("cp")
-        mpm_cp(path,site,subject,session,name)
+        mpm_cp(path,subject,session,name)
 
 if __name__ == '__main__':
     sys.exit(main())

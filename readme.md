@@ -1,6 +1,6 @@
 # MPM / QSM processing
 
-This package preprocesses EPI based MPM/QSM data, performs an hMRI based MPM analysis and prepares the QSM analysis (not included, ask Monica for information)
+This package preprocesses EPI based MPM/QSM data, performs an hMRI based MPM analysis and prepares the QSM analysis
 
 ## Installation
 
@@ -83,14 +83,13 @@ this includes
 
 ## Usage
 
-*usage: mpmqsm_preproc [-h] --path PATH [--den DEN] --site SITE --sub SUB --ses SES [--ptx]*
+*usage: mpmqsm_preproc [-h] --path PATH [--den DEN] --sub SUB --ses SES [--ptx]*
 
 ```
   --path PATH  path to MPM/QSM data, folder, where the BIDS structure
                originates (default: None)
   --den DEN    boolean, shall the raw data be denoised? default = true
                (default: True)
-  --site SITE  exact name of site (eg DZNE) (default: None)
   --sub SUB    exact name of subject (eg subj-01) (default: None)
   --ses SES    exact name of session (eg ses-01) (default: None)
   --ptx        create log file? default true (default: True)
@@ -100,8 +99,8 @@ this includes
 
 MPM output can be found in 
 
-*derivates/SITE/SUBJECT/SESSION/mpm/maps/Results*
+*derivates/SUBJECT/SESSION/mpm/maps/Results*
 
-QSM input (for Monica's analysis)
+QSM input
 
-*derivates/SITE/SUBJECT/SESSION/qsm/ROCombine*
+*derivates/SUBJECT/SESSION/qsm/ROCombine*
