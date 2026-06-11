@@ -1,4 +1,5 @@
 import os
+import subprocess
 import numpy as np
 import nibabel as nib
 import json
@@ -371,14 +372,27 @@ def calc_B1rms(path, sub, ses, pulse="SCAIFIELD"):
 
 
 def call_batch(filename):
-    import matlab.engine as mat # move matlab import to here if matlab is not installed only this function fails
+    file_dir = os.path.dirname(os.path.abspath(filename))
+    script_dir = os.path.dirname(os.path.abspath(__file__))
 
-    eng=mat.start_matlab()
-    eng.addpath(os.path.dirname(filename))
-    eng.addpath(os.path.dirname(__file__))
-    print(os.path.dirname(filename))
-    eng.call_batch(filename,nargout=0)
-    eng.quit()
+    # Escape single quotes for MATLAB strings
+    filename_mat = filename.replace("'", "''")
+    file_dir_mat = file_dir.replace("'", "''")
+    script_dir_mat = script_dir.replace("'", "''")
+
+    matlab_cmd = (
+        f"addpath('{file_dir_mat}');"
+        f"addpath('{script_dir_mat}');"
+        f"disp(pwd);"
+        f"call_batch('{filename_mat}');"
+    )
+
+    print("Running MATLAB command:", matlab_cmd)
+
+    subprocess.run(
+        ["matlab", "-batch", matlab_cmd],
+        check=True,
+    )
 
 def mpm_ptx(path,subject,session,name):
     
